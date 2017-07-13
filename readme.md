@@ -1,5 +1,5 @@
 # Usage
 
 ```
-  (node timestash | npm start) (enter | leave | backup | (task ()))
+  (node timestash | npm start) (enter | leave | backup | (task <action> <title> ))
 ```
