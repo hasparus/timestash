@@ -7,24 +7,32 @@ const days = ['pon', 'wt', 'sr', 'czw', 'pt'];
 const args = process.argv.slice(2);
 const action = args[0];
 
-getData(file, 'utf8').then(tree => {
-  if (doBackups) backup(tree);
-  tree = JSON.parse(tree);
-  if (check(action, 'enter')) {
-    tree = enter(tree);
-  } else if (check(action, 'leave')) {
-    tree = leave(tree);
-  } else if (check(action, 'task')) {
-    tree = task(tree, args[1], args.slice(2));
-  } else if (check(action, 'backup')) {
-    backup(JSON.stringify(tree, null, 2));
-  }
-  const json = JSON.stringify(tree, null, 2);
-  console.log(json);
-  putData(json, file);
-}).catch(error => {
-  console.log('Failed to read history. Error: ' + error);
-});
+getData(file, 'utf8')
+  .then(content => {
+    let tree = JSON.parse(content);
+
+    if (check(action, 'backup')) {
+      backup(JSON.stringify(tree, null, 2));
+      return;
+    }
+
+    if (doBackups) backup(content);
+    if (check(action, 'summary')) {
+      tree = summary(tree);
+    } else if (check(action, 'enter')) {
+      tree = enter(tree);
+    } else if (check(action, 'leave')) {
+      tree = leave(tree);
+    } else if (check(action, 'task')) {
+      tree = task(tree, args[1], args.slice(2));
+    }
+    const json = JSON.stringify(tree, null, 2);
+    console.log(json);
+    putData(json, file);
+  })
+  .catch(error => {
+    console.log('Failed to read history. Error: ' + error);
+  });
 
 function check(action, expected) {
   return action === expected || action === expected[0];
@@ -78,4 +86,17 @@ function floatTimeNow(date) {
 
 function backup(str) {
   putData(str, `./backup/history${Date.now()}.json`);
+}
+
+function summary(tree) {
+  let sum = 0;
+  for (const week of tree.weeks) {
+    for (const k in week) {
+      const day = week[k];
+      day.time = day.time || day.hours.reduce((a, v) => v - a);
+      sum += day.time;
+    }
+  }
+  console.log(`\nSum: ${sum}\n`);
+  return tree;
 }
