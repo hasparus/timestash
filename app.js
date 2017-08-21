@@ -25,6 +25,8 @@ getData(file, 'utf8')
       tree = leave(tree);
     } else if (check(action, 'task')) {
       tree = task(tree, args[1], args.slice(2));
+    } else if (check(action, 'dayoff')) {
+      tree = skip(tree, args[1]);
     }
     const json = JSON.stringify(tree, null, 2);
     console.log(json);
@@ -47,6 +49,22 @@ function task(tree, action, rest) {
   tree.tasks[title].push({
     [action]: new Date().toLocaleString(),
   });
+  return tree;
+}
+
+function skip(tree, howMuch = 1) {
+  while (howMuch > 0) {
+    enter(tree);
+    const weeks = tree.weeks;
+    const lastWeek = weeks[weeks.length - 1];
+    const lastDay = lastWeek[days[Object.keys(lastWeek).length - 1]];
+    delete lastDay.enter;
+    lastDay.hours[0] = lastDay.hours[1] = 0;
+    lastDay.skipped = true;
+    lastDay.time = 0;
+
+    howMuch--;
+  }
   return tree;
 }
 
@@ -90,13 +108,15 @@ function backup(str) {
 
 function summary(tree) {
   let sum = 0;
+  let max = 0;
   for (const week of tree.weeks) {
     for (const k in week) {
       const day = week[k];
-      day.time = day.time || day.hours.reduce((a, v) => v - a);
+      day.time = /* day.time || */day.hours.reduce((a, v) => a && v ? v - a : 0);
       sum += day.time;
+      max += 8;
     }
   }
-  console.log(`\nSum: ${sum}\n`);
+  console.log(`\nSum: ${sum}. Max: ${max}\n`);
   return tree;
 }
